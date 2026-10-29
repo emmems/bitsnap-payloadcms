@@ -19,6 +19,12 @@ pnpm add bitsnap-payloadcms
 npm install bitsnap-payloadcms
 ```
 
+> **Not on npm yet?** Install the published tarball from the GitHub release:
+>
+> ```bash
+> pnpm add https://github.com/emmems/bitsnap-payloadcms/releases/download/v0.1.1/bitsnap-payloadcms-0.1.1.tgz
+> ```
+
 ### 1. Register the plugin
 
 ```ts
