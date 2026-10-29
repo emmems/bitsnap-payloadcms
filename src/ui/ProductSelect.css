@@ -1,0 +1,199 @@
+/* ProductSelect.css — plain CSS, scoped to the Bitsnap package. No Tailwind, no CSS modules. */
+
+.product-select {
+  margin: 1rem 0;
+}
+
+/* Native select — the Payload admin theme does not style native form controls,
+   so background, border, radius, padding and the focus ring are set explicitly. */
+.product-select-trigger {
+  display: block;
+  width: 100%;
+  max-width: 500px;
+  min-width: 300px;
+  height: 40px;
+  padding: 0 14px;
+  font-family: var(--font-body, inherit);
+  font-size: 14px;
+  line-height: 1.5;
+  background-color: var(--theme-elevation-100, #262626);
+  color: var(--theme-text, #fafafa);
+  border: 1px solid var(--theme-elevation-200, #525252);
+  border-radius: var(--style-radius-s, 0.3rem);
+  outline: none;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.product-select-trigger:hover {
+  border-color: var(--theme-elevation-150, #525252);
+}
+
+.product-select-trigger:focus,
+.product-select-trigger:focus-visible {
+  border-color: var(--theme-success-500, #22c55e);
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+  outline: none;
+}
+
+.product-select-trigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.product-select-trigger option {
+  background-color: var(--theme-elevation-50, #1a1a1a);
+  color: var(--theme-text, #fafafa);
+}
+
+.product-select-trigger option:disabled {
+  color: var(--theme-elevation-500, #9ba5b8);
+}
+
+/* Loading placeholder */
+.product-select-loading {
+  width: 300px;
+  max-width: 100%;
+  height: 50px;
+  border-radius: var(--style-radius-s, 4px);
+  background-color: var(--theme-elevation-100, #262626);
+  animation: product-select-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes product-select-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* Product list item (kept for consumers rendering their own product list) */
+.product-select-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 8px 10px;
+  font-size: 14px;
+  color: var(--theme-text, #f5f7fa);
+  border-radius: 4px;
+  user-select: none;
+  outline: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.product-select-item-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+.product-select-item-content img {
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.product-select-item-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.product-select-item-price {
+  flex-shrink: 0;
+  flex-grow: 0;
+  font-weight: 500;
+  color: var(--theme-elevation-500, #9ba5b8);
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.product-select-item[data-selected='true'] .product-select-item-price {
+  color: var(--theme-success-500, #22c55e);
+}
+
+.product-select-item-status {
+  flex-shrink: 0;
+  flex-grow: 0;
+  margin-left: auto;
+  padding: 2px 6px;
+  font-size: 11px;
+  line-height: 1.4;
+  text-transform: uppercase;
+  color: var(--theme-elevation-500, #9ba5b8);
+  white-space: nowrap;
+  border: 1px solid var(--theme-elevation-200, #525252);
+  border-radius: 999px;
+}
+
+.product-select-item-status + .product-select-item-price {
+  margin-left: 8px;
+}
+
+.product-select-item:hover,
+.product-select-item:focus {
+  background-color: var(--theme-elevation-100, #2a3441);
+  color: var(--theme-text, #f5f7fa);
+}
+
+.product-select-item[data-selected='true'] {
+  background-color: var(--theme-elevation-100, #2a3441);
+  color: var(--theme-text, #f5f7fa);
+}
+
+.product-select-item[data-disabled='true'] {
+  color: var(--theme-elevation-500, #9ba5b8);
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+/* Selected product summary — read-only, shown under the dropdown */
+.product-select-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  max-width: 500px;
+  padding: 8px 10px;
+  background-color: var(--theme-elevation-50, #1f1f1f);
+  border: 1px solid var(--theme-elevation-150, #3a3a3a);
+  border-radius: 4px;
+}
+
+.product-select-summary img {
+  flex-shrink: 0;
+  width: 40px;
+  height: 48px;
+  object-fit: cover;
+}
+
+.product-select-summary-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.product-select-summary-name {
+  overflow: hidden;
+  color: var(--theme-text, #f5f7fa);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.product-select-summary-price {
+  color: var(--theme-elevation-500, #9ba5b8);
+  font-size: 13px;
+  font-weight: 500;
+}

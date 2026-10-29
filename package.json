@@ -1,0 +1,94 @@
+{
+  "name": "bitsnap-payloadcms",
+  "version": "0.1.0",
+  "description": "Bitsnap plugin for Payload CMS 3 — product sync, admin product manager and product picker for Payload-based storefronts.",
+  "keywords": [
+    "bitsnap",
+    "payload",
+    "payloadcms",
+    "payload-plugin",
+    "ecommerce",
+    "cms"
+  ],
+  "homepage": "https://github.com/emmems/bitsnap-payloadcms#readme",
+  "bugs": {
+    "url": "https://github.com/emmems/bitsnap-payloadcms/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/emmems/bitsnap-payloadcms.git"
+  },
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "import": "./dist/client.js",
+      "default": "./dist/client.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.js",
+      "default": "./dist/types.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "scripts": {
+    "build": "pnpm run clean && pnpm run build:js && pnpm run build:types && node scripts/copy-assets.mjs",
+    "build:js": "swc ./src -d ./dist --config-file .swcrc --strip-leading-paths --ignore \"**/*.d.ts\"",
+    "build:types": "tsc --emitDeclarationOnly --outDir dist",
+    "clean": "node scripts/clean.mjs",
+    "typecheck": "tsc --noEmit",
+    "prepack": "pnpm run build",
+    "prepublishOnly": "pnpm run build"
+  },
+  "dependencies": {
+    "bitsnap-js": "^1.5.0",
+    "zod": "^4.1.12"
+  },
+  "peerDependencies": {
+    "@payloadcms/ui": "^3.88.0",
+    "next": "^15.0.0 || ^16.0.0",
+    "payload": "^3.88.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "next": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@payloadcms/ui": "3.88.0",
+    "@swc/cli": "^0.7.0",
+    "@swc/core": "^1.13.0",
+    "@types/node": "^22.5.4",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "payload": "3.88.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "typescript": "5.6.3"
+  },
+  "engines": {
+    "node": "^18.20.2 || >=20.9.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
