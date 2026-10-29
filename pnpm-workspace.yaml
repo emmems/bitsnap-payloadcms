@@ -1,5 +1,11 @@
 allowBuilds:
   "@swc/core": true
+  esbuild: true
 minimumReleaseAgeExclude:
   - bitsnap-js@1.5.0
   - zod@4.1.12
+  - "@babel/generator@7.29.12"
+  - "@babel/parser@7.29.12"
+  - "@babel/traverse@7.29.12"
+  - "@borewit/text-codec@0.2.3"
+  - caniuse-lite@1.0.30001820
