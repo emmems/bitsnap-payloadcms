@@ -255,6 +255,17 @@ If the plugin used to live inside your application (for example
 
 5. Run `pnpm generate:importmap` and `pnpm generate:types`.
 
+## Publishing
+
+Releases are published to npm by GitHub Actions:
+
+1. Create an npm token with **publish** scope (an automation token or a granular token with the
+   `read-package` + `write-package` permissions).
+2. Add it to the repository as a secret named **`NPM_TOKEN`**.
+3. Publish by creating a GitHub release — or by running the `Publish` workflow manually.
+
+The workflow runs `pnpm build`, then `npm publish --provenance --access public`.
+
 ## License
 
 MIT © Piotr Michalik
