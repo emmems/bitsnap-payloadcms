@@ -1,6 +1,6 @@
 {
   "name": "bitsnap-payloadcms",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Bitsnap plugin for Payload CMS 3 — product sync, admin product manager and product picker for Payload-based storefronts.",
   "keywords": [
     "bitsnap",
@@ -54,6 +54,7 @@
     "build:types": "tsc --emitDeclarationOnly --outDir dist",
     "clean": "node scripts/clean.mjs",
     "typecheck": "tsc --noEmit",
+    "prepare": "pnpm run build",
     "prepack": "pnpm run build",
     "prepublishOnly": "pnpm run build"
   },
