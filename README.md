@@ -19,12 +19,6 @@ pnpm add bitsnap-payloadcms
 npm install bitsnap-payloadcms
 ```
 
-> **Not on npm yet?** Install the published tarball from the GitHub release:
->
-> ```bash
-> pnpm add https://github.com/emmems/bitsnap-payloadcms/releases/download/v0.1.1/bitsnap-payloadcms-0.1.1.tgz
-> ```
-
 ### 1. Register the plugin
 
 ```ts
@@ -257,14 +251,20 @@ If the plugin used to live inside your application (for example
 
 ## Publishing
 
-Releases are published to npm by GitHub Actions:
+Releases are published to npm by GitHub Actions with
+[npm trusted publishing](https://docs.npmjs.com/trusted-publishers): the workflow
+mints a short-lived OIDC token that npm exchanges for a publish token bound to
+this repository. No npm token is stored in GitHub, so there is nothing to rotate.
 
-1. Create an npm token with **publish** scope (an automation token or a granular token with the
-   `read-package` + `write-package` permissions).
-2. Add it to the repository as a secret named **`NPM_TOKEN`**.
-3. Publish by creating a GitHub release — or by running the `Publish` workflow manually.
+To publish:
 
-The workflow runs `pnpm build`, then `npm publish --provenance --access public`.
+1. Bump the version in `package.json` and commit.
+2. Tag the commit and create the GitHub release — creating the release is what
+   starts the publish. The `Publish` workflow can also be run manually, with an
+   optional npm dist-tag.
+
+The workflow runs `pnpm run typecheck`, `pnpm run build`, then
+`npm publish --provenance --access public`.
 
 ## License
 
