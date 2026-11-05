@@ -74,9 +74,6 @@ jobs:
       - name: Publish to npm
         if: steps.published.outputs.exists != 'true'
         # npm attaches the provenance attestation automatically for OIDC
-        # publishes from a public repository.
-        run: 'npm publish --provenance --access public'
-
-      - name: Publish under a custom dist-tag
-        if: ${{ inputs.tag && inputs.tag != 'latest' }}
-        run: 'npm publish --provenance --access public --tag ${{ inputs.tag }}'
+        # publishes from a public repository. The version goes out once, under
+        # the dist-tag the dispatch asked for.
+        run: 'npm publish --provenance --access public --tag ${{ inputs.tag || ''latest'' }}'
