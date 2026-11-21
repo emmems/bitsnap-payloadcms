@@ -1,6 +1,12 @@
 import type { Config as PayloadConfig, Payload, PayloadRequest } from 'payload'
 
-export type BitsnapWebhookHandler<T = any> = (args: {
+export type BitsnapAccessArgs = {
+  req: PayloadRequest
+}
+
+export type BitsnapAccess = (args: BitsnapAccessArgs) => boolean | Promise<boolean>
+
+export type BitsnapWebhookHandler<T = unknown> = (args: {
   config: PayloadConfig
   event: T
   payload: Payload
@@ -24,17 +30,24 @@ export type SyncConfig = {
 
 export type BitsnapPluginConfig = {
   /**
-   * Bitsnap API key. Server-side only — never sent to the browser.
+   * Bitsnap API key (`bs_test_...` or `bs_live_...`).
+   * Server-side only — never sent to the browser.
    */
   bitsnapApiKey: string
   /**
-   * Bitsnap project ID. Falls back to `process.env.BITSNAP_PROJECT_ID`.
+   * Single source of truth for the Bitsnap API and dashboard URL.
+   * Fallback order: `host` -> `dashboardUrl` -> `process.env.CUSTOM_BITSNAP_HOST` -> `https://bitsnap.pl`.
    */
-  projectId?: string
+  host?: string
   /**
-   * Base URL of the Bitsnap dashboard. Default: `https://bitsnap.pl`.
+   * @deprecated Use `host` instead. Kept as a fallback alias when `host` is not set.
    */
   dashboardUrl?: string
+  /**
+   * Optional Bitsnap project ID. Falls back to `process.env.BITSNAP_PROJECT_ID`
+   * and is automatically detected from `AccountService.GetAccount` at runtime.
+   */
+  projectId?: string
   /**
    * Path the plugin mounts its REST endpoints on, relative to the Payload API root.
    * Default: `/bitsnap`.
@@ -44,6 +57,19 @@ export type BitsnapPluginConfig = {
    * Currency used when creating products and variants. Default: `PLN`.
    */
   currency?: string
+  /**
+   * Access control function for the Bitsnap REST endpoints.
+   * Defaults to allowing only authenticated admin users (`req.user.collection === req.payload.config.admin.user`).
+   */
+  access?: BitsnapAccess
+  /**
+   * Optional custom `fetch` implementation passed to the Bitsnap API client (useful for tests/proxies).
+   */
+  fetch?: typeof fetch
+  /**
+   * Optional request timeout in milliseconds for Bitsnap API calls.
+   */
+  timeoutMs?: number
   logs?: boolean
   sync?: SyncConfig[]
   webhooks?: BitsnapWebhookHandler | BitsnapWebhookHandlers
@@ -52,14 +78,15 @@ export type BitsnapPluginConfig = {
 export type SanitizedBitsnapPluginConfig = {
   apiBasePath: string
   currency: string
+  host: string
   dashboardUrl: string
   projectId: string
   sync: SyncConfig[]
 } & BitsnapPluginConfig
 
 /**
- * Values the admin UI components need. Passed to them through Payload's
- * `clientProps` mechanism — see `admin.components.Field.clientProps`.
+ * Public values the admin UI components need.
+ * Stored by `bitsnapPlugin` in `config.admin.custom.bitsnap` and never contains secrets.
  */
 export type BitsnapClientConfig = {
   /**
@@ -68,16 +95,64 @@ export type BitsnapClientConfig = {
    */
   apiBaseUrl: string
   currency: string
+  host: string
   dashboardUrl: string
   projectId: string
 }
 
+export type BitsnapStatus = 'DRAFT' | 'UNPUBLISHED' | 'PUBLISHED'
+
+export type BitsnapEnvironment = 'live' | 'test' | 'unknown'
+
+export type BitsnapAccountInfo = {
+  projectId: string
+  projectName: string
+  environment: BitsnapEnvironment
+  canWrite: boolean
+  scopes: string[]
+}
+
+export type ManagedVariant = {
+  id: string
+  name: string
+  priceAmount: number | null
+  priceCurrency: string | null
+  availableQuantity: number | null
+}
+
+export type ManagedProduct = {
+  id: string
+  name: string
+  status: BitsnapStatus
+  priceAmount: number | null
+  priceCurrency: string | null
+  availableQuantity: number | null
+  images: string[]
+  variants: ManagedVariant[]
+  revision: number
+}
+
+export type ProductListItem = {
+  id: string
+  name: string
+  status: BitsnapStatus
+  priceAmount: number | null
+  priceCurrency: string | null
+  imageUrl: string | null
+  variantsCount: number
+}
+
+export type ShopProductsResult = {
+  products: ProductListItem[]
+  nextCursor: string
+}
+
 export type BitsnapProxy = (args: {
-  bitsnapArgs: any[]
+  bitsnapArgs: unknown[]
   bitsnapMethod: string
   bitsnapApiKey: string
 }) => Promise<{
-  data?: any
+  data?: unknown
   message?: string
   status: number
 }>

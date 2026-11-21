@@ -4,8 +4,24 @@
   gap: var(--base, 20px);
 }
 
-.bitsnap-manager .group-field__header {
+.bitsnap-manager__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: calc(var(--base, 20px) * 0.5);
   margin-bottom: 0;
+}
+
+.bitsnap-manager__account {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bitsnap-manager__account-project {
+  font-size: calc(var(--base-body-size, 13) * 0.92px);
+  color: var(--theme-elevation-500, #9a9a9a);
 }
 
 .bitsnap-manager .field-type.row .row__fields:has(> *:nth-child(1)) {
@@ -16,12 +32,20 @@
   margin-bottom: 0;
 }
 
+.bitsnap-manager__numeric input {
+  font-variant-numeric: tabular-nums;
+}
+
 .bitsnap-manager__col--half {
   --field-width: 50%;
 }
 
 .bitsnap-manager__col--third {
   --field-width: 33.33%;
+}
+
+.bitsnap-manager__col--two-thirds {
+  --field-width: 66.66%;
 }
 
 .bitsnap-manager__col--quarter {
@@ -33,6 +57,48 @@
   margin: 0;
   max-width: 68ch;
   color: var(--theme-elevation-500, #9a9a9a);
+}
+
+.bitsnap-manager__segmented {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 3px;
+  gap: 4px;
+  border-radius: var(--style-radius-s, 4px);
+  background-color: var(--theme-elevation-100, #262626);
+  border: 1px solid var(--theme-elevation-150, #3a3a3a);
+}
+
+.bitsnap-manager__segment {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--theme-elevation-600, #b3b3b3);
+  padding: 6px 12px;
+  border-radius: calc(var(--style-radius-s, 4px) - 1px);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.bitsnap-manager__segment:hover {
+  color: var(--theme-text, #fafafa);
+}
+
+.bitsnap-manager__segment--active {
+  background-color: var(--theme-elevation-0, #141414);
+  color: var(--theme-text, #fafafa);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.bitsnap-manager__link-picker {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--base, 20px) * 0.5);
+  max-width: 560px;
 }
 
 .bitsnap-manager__loading {
@@ -86,7 +152,7 @@
 .bitsnap-manager__grid-head,
 .bitsnap-manager__grid-row {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) calc(var(--base, 20px) * 1.6);
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto;
   align-items: center;
   gap: calc(var(--base, 20px) * 0.5);
 }
@@ -101,7 +167,18 @@
 
 .bitsnap-manager__remove {
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
+  min-width: calc(var(--base, 20px) * 1.6);
+}
+
+.bitsnap-manager__inline-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bitsnap-manager__inline-confirm .btn {
+  margin: 0;
 }
 
 .bitsnap-manager__sr-only {
@@ -144,7 +221,7 @@
   }
 
   .bitsnap-manager__grid-row {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) calc(var(--base, 20px) * 1.6);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
     padding-bottom: calc(var(--base, 20px) * 0.5);
     border-bottom: 1px solid var(--theme-elevation-100, #262626);
   }

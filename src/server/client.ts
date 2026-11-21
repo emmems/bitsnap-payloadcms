@@ -1,124 +1,153 @@
-import * as BitsnapBackend from 'bitsnap-js/backend'
+import { createBitsnapClient } from 'bitsnap-js/client'
+
+import { DEFAULT_CURRENCY, DEFAULT_HOST, DEFAULT_PRODUCTS_LIMIT } from '../constants.js'
 import type {
-  CreateProductInput,
+  BitsnapAccountInfo,
   ManagedProduct,
-  ProductWriteResult,
-  UpdateProductInput,
-} from 'bitsnap-js/backend'
+  ShopProductsResult,
+} from '../types.js'
+import {
+  mapAccountInfo,
+  mapCreateProductRequest,
+  mapManagedProduct,
+  mapProductListItem,
+  mapUpdateProductRequest,
+} from './mappers.js'
+import type { BitsnapCreateInput, BitsnapUpdateInput } from './schemas.js'
 
-import { DEFAULT_PRODUCTS_LIMIT } from '../constants.js'
-
-export type ConfigureBitsnapBackendArgs = {
+export type BitsnapServerClientOptions = {
   /**
-   * Bitsnap API key. Falls back to the key the plugin was configured with and
-   * finally to `process.env.BITSNAP_API_KEY`.
+   * Bitsnap API key (`bs_test_...` or `bs_live_...`).
    */
-  apiKey?: string
+  apiKey: string
+  /**
+   * Base host URL of the Bitsnap API. Default: `https://bitsnap.pl`.
+   */
+  host?: string
+  /**
+   * Default currency used when patching prices without an explicit currency.
+   */
+  currency?: string
+  /**
+   * Optional custom `fetch` implementation (tests, proxies).
+   */
+  fetch?: typeof fetch
+  /**
+   * Request timeout in milliseconds.
+   */
+  timeoutMs?: number
+}
+
+export type ProductWriteResult = {
+  id: string
+  revision: number
+  product: ManagedProduct
+}
+
+export type ListProductsParams = {
+  search?: string
+  cursor?: string
+  limit?: number
+  includeDrafts?: boolean
+}
+
+export type BitsnapServerClient = {
+  readonly host: string
+  getAccount: () => Promise<BitsnapAccountInfo>
+  getProduct: (id: string) => Promise<ManagedProduct>
+  createProduct: (input: BitsnapCreateInput) => Promise<ProductWriteResult>
+  updateProduct: (id: string, patch: BitsnapUpdateInput) => Promise<ProductWriteResult>
+  listProducts: (params?: ListProductsParams) => Promise<ShopProductsResult>
 }
 
 /**
- * Raw envelope returned by the Bitsnap product list endpoint.
- */
-export type ShopProductsResult = Awaited<ReturnType<typeof BitsnapBackend.getProducts>>
-
-let configuredApiKey: string | null = null
-
-/**
- * Resolves the API key that should be used for the Bitsnap calls.
+ * Creates a per-instance server client backed by `bitsnap-js/client`.
  *
- * Order: explicit argument → key the plugin was configured with →
- * `process.env.BITSNAP_API_KEY`.
+ * Holds no module-level state — safe for multiple plugin instances and parallel tests.
  */
-export function resolveBitsnapApiKey(apiKey?: string): string {
-  if (typeof apiKey === 'string' && apiKey.length > 0) {
-    return apiKey
+export function createBitsnapServerClient(
+  options: BitsnapServerClientOptions,
+): BitsnapServerClient {
+  const host = (options.host ?? DEFAULT_HOST).replace(/\/+$/, '') || DEFAULT_HOST
+  const defaultCurrency = options.currency ?? DEFAULT_CURRENCY
+
+  const sdk = createBitsnapClient({
+    apiKey: options.apiKey,
+    host,
+    fetch: options.fetch,
+    timeoutMs: options.timeoutMs,
+  })
+
+  let accountPromise: Promise<BitsnapAccountInfo> | null = null
+
+  const getAccount = (): Promise<BitsnapAccountInfo> => {
+    if (!accountPromise) {
+      accountPromise = sdk.account
+        .get()
+        .then(mapAccountInfo)
+        .catch((error: unknown) => {
+          accountPromise = null
+          throw error
+        })
+    }
+
+    return accountPromise
   }
 
-  if (typeof configuredApiKey === 'string' && configuredApiKey.length > 0) {
-    return configuredApiKey
+  const getProduct = async (id: string): Promise<ManagedProduct> => {
+    const response = await sdk.products.get(id)
+    return mapManagedProduct(response.product)
   }
 
-  return process.env.BITSNAP_API_KEY ?? ''
-}
+  const createProduct = async (input: BitsnapCreateInput): Promise<ProductWriteResult> => {
+    const response = await sdk.products.create(mapCreateProductRequest(input))
+    const product = mapManagedProduct(response.product)
 
-/**
- * True when a Bitsnap API key is available. Drafts can only be listed with a key.
- */
-export function isBitsnapApiKeyConfigured(apiKey?: string): boolean {
-  return resolveBitsnapApiKey(apiKey).length > 0
-}
-
-/**
- * Points the Bitsnap SDK at the right host and gives it the API key.
- */
-export function configureBitsnapBackend({ apiKey }: ConfigureBitsnapBackendArgs = {}): void {
-  const resolvedApiKey = resolveBitsnapApiKey(apiKey)
-  configuredApiKey = resolvedApiKey
-
-  const customHost = process.env.CUSTOM_BITSNAP_HOST
-  if (customHost != null && customHost.length > 0) {
-    void BitsnapBackend.setCustomHost(customHost)
+    return {
+      id: product.id,
+      revision: product.revision,
+      product,
+    }
   }
 
-  void BitsnapBackend.setApiKey(resolvedApiKey)
-}
+  const updateProduct = async (
+    id: string,
+    patch: BitsnapUpdateInput,
+  ): Promise<ProductWriteResult> => {
+    const response = await sdk.products.update(
+      mapUpdateProductRequest(id, patch, defaultCurrency),
+    )
+    const product = mapManagedProduct(response.product)
 
-/**
- * Reads a single managed product (including its `revision`) from Bitsnap.
- */
-export async function getManagedProduct(
-  projectId: string,
-  productId: string,
-): Promise<ManagedProduct> {
-  configureBitsnapBackend()
+    return {
+      id: product.id,
+      revision: product.revision,
+      product,
+    }
+  }
 
-  return BitsnapBackend.getManagedProduct(projectId, productId)
-}
+  const listProducts = async (params?: ListProductsParams): Promise<ShopProductsResult> => {
+    const response = await sdk.products.list({
+      ...(params?.search ? { search: params.search } : {}),
+      ...(params?.cursor ? { cursor: params.cursor } : {}),
+      limit: params?.limit ?? DEFAULT_PRODUCTS_LIMIT,
+      includeDrafts: params?.includeDrafts ?? false,
+    })
 
-/**
- * Creates a managed product in Bitsnap.
- */
-export async function createManagedProduct(
-  projectId: string,
-  input: CreateProductInput,
-): Promise<ProductWriteResult> {
-  configureBitsnapBackend()
+    return {
+      products: Array.isArray(response.products)
+        ? response.products.map(mapProductListItem)
+        : [],
+      nextCursor: response.nextCursor ?? '',
+    }
+  }
 
-  return BitsnapBackend.createProduct(projectId, input)
-}
-
-/**
- * Patches a managed product in Bitsnap.
- */
-export async function updateManagedProduct(
-  projectId: string,
-  productId: string,
-  patch: UpdateProductInput,
-): Promise<ProductWriteResult> {
-  configureBitsnapBackend()
-
-  return BitsnapBackend.updateProduct(projectId, productId, patch)
-}
-
-/**
- * Lists the products of a Bitsnap project.
- *
- * Drafts are only included when an API key is configured — the public endpoint
- * does not serve them.
- */
-export async function getShopProducts(
-  projectId: string,
-  limit: number = DEFAULT_PRODUCTS_LIMIT,
-): Promise<ShopProductsResult> {
-  configureBitsnapBackend()
-
-  const includeDrafts = isBitsnapApiKeyConfigured()
-
-  return BitsnapBackend.getProducts(
-    projectId,
-    limit,
-    0,
-    { cache: 'no-store' },
-    { groupVariants: true, includeDrafts },
-  )
+  return {
+    host: sdk.host,
+    getAccount,
+    getProduct,
+    createProduct,
+    updateProduct,
+    listProducts,
+  }
 }

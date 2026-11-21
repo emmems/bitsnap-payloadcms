@@ -1,28 +1,35 @@
-export {
-  configureBitsnapBackend,
-  createManagedProduct,
-  getManagedProduct,
-  getShopProducts,
-  isBitsnapApiKeyConfigured,
-  resolveBitsnapApiKey,
-  updateManagedProduct,
-} from './client.js'
+export { createBitsnapServerClient } from './client.js'
 export type {
-  ConfigureBitsnapBackendArgs,
-  ShopProductsResult,
+  BitsnapServerClient,
+  BitsnapServerClientOptions,
+  ListProductsParams,
+  ProductWriteResult,
 } from './client.js'
-export { bitsnapErrorMessage, bitsnapErrorResponse } from './errors.js'
-export { createBitsnapEndpoints } from './endpoints.js'
+export { createBitsnapEndpoints, defaultBitsnapAccess } from './endpoints.js'
+export { bitsnapErrorMessage, bitsnapErrorResponse, zodErrorResponse } from './errors.js'
+export {
+  mapAccountInfo,
+  mapCreateProductRequest,
+  mapManagedProduct,
+  mapManagedVariant,
+  mapProductListItem,
+  mapUpdateProductRequest,
+  mapVariantInput,
+  toAccountEnvironment,
+  toApiProductStatus,
+  toBitsnapStatus,
+} from './mappers.js'
 export {
   bitsnapCreateSchema,
+  bitsnapListProductsQuerySchema,
   bitsnapStatusSchema,
   bitsnapUpdateSchema,
   bitsnapVariantSchema,
-  getBitsnapCurrency,
-  setBitsnapCurrency,
+  createBitsnapCreateSchema,
 } from './schemas.js'
 export type {
   BitsnapCreateInput,
+  BitsnapListProductsQuery,
   BitsnapStatus,
   BitsnapUpdateInput,
   BitsnapVariantInput,

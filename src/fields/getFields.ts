@@ -1,16 +1,13 @@
-import type { CollectionConfig, Field } from 'payload'
+import type { CollectionConfig, Field, TextField, UIField } from 'payload'
 
-import {
-  DEFAULT_API_BASE_PATH,
-  DEFAULT_CURRENCY,
-  DEFAULT_DASHBOARD_URL,
-} from '../constants.js'
+import { DEFAULT_CURRENCY, DEFAULT_HOST, DEFAULT_PRODUCT_ID_PATH } from '../constants.js'
 import type {
   BitsnapClientConfig,
   BitsnapPluginConfig,
   SanitizedBitsnapPluginConfig,
   SyncConfig,
 } from '../types.js'
+import { normalizeApiBasePath } from '../utils/normalizeApiBasePath.js'
 
 /**
  * Import-map paths of the admin components shipped with this package.
@@ -21,6 +18,8 @@ import type {
 export const BITSNAP_MANAGER_COMPONENT_PATH = 'bitsnap-payloadcms/client#BitsnapManager'
 export const BITSNAP_LINK_TO_DOC_COMPONENT_PATH = 'bitsnap-payloadcms/client#LinkToDoc'
 export const BITSNAP_PRODUCT_SELECT_COMPONENT_PATH = 'bitsnap-payloadcms/client#ProductSelect'
+export const BITSNAP_PRODUCT_ROW_LABEL_COMPONENT_PATH =
+  'bitsnap-payloadcms/client#BitsnapProductRowLabel'
 
 /**
  * Default Payload REST API root. Mirrors Payload's own `config.routes.api` default.
@@ -38,8 +37,91 @@ export type GetFieldsArgs = {
   syncConfig: SyncConfig
 }
 
+export type BitsnapManagerFieldOptions = {
+  /**
+   * Path of the form field storing the linked Bitsnap product ID.
+   * Default: `'bitsnapID'`.
+   */
+  productIdPath?: string
+  /**
+   * Partial Payload field overrides. `admin`, `admin.components` and
+   * `admin.custom` are deep-merged so overriding e.g. `admin.condition` never
+   * clobbers the Bitsnap UI component.
+   */
+  overrides?: Partial<UIField>
+}
+
+export type ProductSelectFieldOptions = {
+  /**
+   * Allow selecting draft / unpublished products in addition to published ones.
+   * Default: `false`.
+   */
+  allowDrafts?: boolean
+  /**
+   * Partial Payload field overrides. `admin`, `admin.components` and
+   * `admin.custom` are deep-merged so overriding e.g. `admin.width` never
+   * clobbers the Bitsnap UI component.
+   */
+  overrides?: Partial<TextField>
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function normalizeHost(value?: string): string {
+  const trimmed = value?.trim().replace(/\/+$/, '') ?? ''
+  return trimmed === '' ? DEFAULT_HOST : trimmed
+}
+
 /**
- * Maps a plugin configuration onto the values the admin components need.
+ * Non-mutating deep-merge for Payload field overrides.
+ * Recursively preserves `admin`, `admin.components`, and `admin.custom`.
+ */
+export function mergeFieldOverrides<T extends Field>(base: T, overrides?: Partial<T>): T {
+  if (!overrides) {
+    return base
+  }
+
+  const baseRecord = base as unknown as Record<string, unknown>
+  const overrideRecord = overrides as unknown as Record<string, unknown>
+
+  const merged: Record<string, unknown> = {
+    ...baseRecord,
+    ...overrideRecord,
+  }
+
+  if (isPlainObject(baseRecord.admin) && isPlainObject(overrideRecord.admin)) {
+    const baseAdmin = baseRecord.admin
+    const overrideAdmin = overrideRecord.admin
+
+    const mergedAdmin: Record<string, unknown> = {
+      ...baseAdmin,
+      ...overrideAdmin,
+    }
+
+    if (isPlainObject(baseAdmin.components) && isPlainObject(overrideAdmin.components)) {
+      mergedAdmin.components = {
+        ...baseAdmin.components,
+        ...overrideAdmin.components,
+      }
+    }
+
+    if (isPlainObject(baseAdmin.custom) && isPlainObject(overrideAdmin.custom)) {
+      mergedAdmin.custom = {
+        ...baseAdmin.custom,
+        ...overrideAdmin.custom,
+      }
+    }
+
+    merged.admin = mergedAdmin
+  }
+
+  return merged as unknown as T
+}
+
+/**
+ * Maps a plugin configuration onto the public values the admin components need.
  *
  * Only non-secret values end up here — the API key is never part of the
  * client configuration.
@@ -48,32 +130,32 @@ export function bitsnapClientConfig(
   pluginConfig?: Partial<BitsnapPluginConfig>,
   apiRoute: string = DEFAULT_API_ROUTE,
 ): BitsnapClientConfig {
-  const apiBasePath = pluginConfig?.apiBasePath ?? DEFAULT_API_BASE_PATH
-  const currency = pluginConfig?.currency ?? DEFAULT_CURRENCY
-  const dashboardUrl = pluginConfig?.dashboardUrl ?? DEFAULT_DASHBOARD_URL
+  const normalizedBasePath = normalizeApiBasePath(pluginConfig?.apiBasePath)
+  const currency = pluginConfig?.currency?.trim() || DEFAULT_CURRENCY
+  const host = normalizeHost(
+    pluginConfig?.host ?? pluginConfig?.dashboardUrl ?? process.env.CUSTOM_BITSNAP_HOST,
+  )
   const projectId = pluginConfig?.projectId ?? process.env.BITSNAP_PROJECT_ID ?? ''
-  const normalizedApiRoute = apiRoute.endsWith('/') ? apiRoute.slice(0, -1) : apiRoute
+  const normalizedApiRoute = apiRoute.trim().replace(/\/+$/, '')
 
   return {
-    apiBaseUrl: `${normalizedApiRoute}${apiBasePath}`,
+    apiBaseUrl: `${normalizedApiRoute}${normalizedBasePath}`,
     currency,
-    dashboardUrl,
+    host,
+    dashboardUrl: host,
     projectId,
   }
 }
 
 /**
- * `ui` field that renders the Bitsnap product manager inside the Payload admin.
- *
- * `apiRoute` is only needed when the consuming project changed Payload's
- * `config.routes.api` — it defaults to `/api`.
+ * Zero-config `ui` field that renders the Bitsnap product manager inside the
+ * Payload admin. Reads public plugin config automatically from
+ * `config.admin.custom.bitsnap`.
  */
-export function bitsnapManagerField(
-  pluginConfig?: Partial<BitsnapPluginConfig>,
-  overrides?: Partial<Field>,
-  apiRoute?: string,
-): Field {
-  const field: Field = {
+export function bitsnapManagerField(options?: BitsnapManagerFieldOptions): UIField {
+  const productIdPath = options?.productIdPath?.trim() || DEFAULT_PRODUCT_ID_PATH
+
+  const field: UIField = {
     name: 'bitsnapManager',
     type: 'ui',
     label: { en: 'Product in Bitsnap', pl: 'Produkt w Bitsnap' },
@@ -81,28 +163,26 @@ export function bitsnapManagerField(
       components: {
         Field: {
           path: BITSNAP_MANAGER_COMPONENT_PATH,
-          clientProps: bitsnapClientConfig(pluginConfig, apiRoute),
         },
+      },
+      custom: {
+        productIdPath,
       },
     },
   }
 
-  return applyOverrides(field, overrides)
+  return mergeFieldOverrides<UIField>(field, options?.overrides)
 }
 
 /**
- * Text field that renders the Bitsnap product picker. Meant for blocks that
- * display a single Bitsnap product.
- *
- * `apiRoute` is only needed when the consuming project changed Payload's
- * `config.routes.api` — it defaults to `/api`.
+ * Zero-config `text` field that renders the searchable, paginated Bitsnap
+ * product picker. Reads public plugin config automatically from
+ * `config.admin.custom.bitsnap`.
  */
-export function productSelectField(
-  pluginConfig?: Partial<BitsnapPluginConfig>,
-  overrides?: Partial<Field>,
-  apiRoute?: string,
-): Field {
-  const field: Field = {
+export function productSelectField(options?: ProductSelectFieldOptions): TextField {
+  const allowDrafts = options?.allowDrafts ?? false
+
+  const field: TextField = {
     name: 'productID',
     type: 'text',
     label: { en: 'Product', pl: 'Produkt' },
@@ -110,8 +190,10 @@ export function productSelectField(
       components: {
         Field: {
           path: BITSNAP_PRODUCT_SELECT_COMPONENT_PATH,
-          clientProps: bitsnapClientConfig(pluginConfig, apiRoute),
         },
+      },
+      custom: {
+        allowDrafts,
       },
       description: {
         en: 'Bitsnap product shown by this block.',
@@ -122,7 +204,7 @@ export function productSelectField(
     required: false,
   }
 
-  return applyOverrides(field, overrides)
+  return mergeFieldOverrides<TextField>(field, options?.overrides)
 }
 
 /**
@@ -132,13 +214,11 @@ export function productSelectField(
  * appended so the collection keeps its own schema intact.
  */
 export function getFields({
-  apiRoute,
   collection,
-  pluginConfig,
   syncConfig,
 }: GetFieldsArgs): Field[] {
-  const bitsnapIDField: Field = {
-    name: 'bitsnapID',
+  const bitsnapIDField: TextField = {
+    name: DEFAULT_PRODUCT_ID_PATH,
     type: 'text',
     admin: {
       position: 'sidebar',
@@ -158,18 +238,17 @@ export function getFields({
     label: { en: 'Skip Sync', pl: 'Pomiń synchronizację' },
   }
 
-  const docUrlField: Field = {
+  const docUrlField: UIField = {
     name: 'docUrl',
     type: 'ui',
     admin: {
       components: {
         Field: {
           path: BITSNAP_LINK_TO_DOC_COMPONENT_PATH,
-          clientProps: bitsnapClientConfig(pluginConfig, apiRoute),
         },
       },
       custom: {
-        nameOfIDField: 'bitsnapID',
+        nameOfIDField: DEFAULT_PRODUCT_ID_PATH,
       },
       position: 'sidebar',
     },
@@ -180,12 +259,4 @@ export function getFields({
   void syncConfig
 
   return [...collection.fields, bitsnapIDField, skipSyncField, docUrlField]
-}
-
-function applyOverrides(field: Field, overrides?: Partial<Field>): Field {
-  if (!overrides) {
-    return field
-  }
-
-  return Object.assign(field, overrides)
 }

@@ -4,80 +4,28 @@
   margin: 1rem 0;
 }
 
-/* Native select — the Payload admin theme does not style native form controls,
-   so background, border, radius, padding and the focus ring are set explicitly. */
-.product-select-trigger {
-  display: block;
-  width: 100%;
-  max-width: 500px;
-  min-width: 300px;
-  height: 40px;
-  padding: 0 14px;
-  font-family: var(--font-body, inherit);
-  font-size: 14px;
-  line-height: 1.5;
-  background-color: var(--theme-elevation-100, #262626);
-  color: var(--theme-text, #fafafa);
-  border: 1px solid var(--theme-elevation-200, #525252);
-  border-radius: var(--style-radius-s, 0.3rem);
-  outline: none;
-  cursor: pointer;
-  transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
+.product-select-control {
+  max-width: 560px;
 }
 
-.product-select-trigger:hover {
-  border-color: var(--theme-elevation-150, #525252);
+.product-select-error {
+  max-width: 560px;
+  margin-bottom: 8px;
 }
 
-.product-select-trigger:focus,
-.product-select-trigger:focus-visible {
-  border-color: var(--theme-success-500, #22c55e);
-  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
-  outline: none;
+.product-select-error .banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
-.product-select-trigger:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.product-select-trigger option {
-  background-color: var(--theme-elevation-50, #1a1a1a);
-  color: var(--theme-text, #fafafa);
-}
-
-.product-select-trigger option:disabled {
-  color: var(--theme-elevation-500, #9ba5b8);
-}
-
-/* Loading placeholder */
-.product-select-loading {
-  width: 300px;
-  max-width: 100%;
-  height: 50px;
-  border-radius: var(--style-radius-s, 4px);
-  background-color: var(--theme-elevation-100, #262626);
-  animation: product-select-pulse 1.4s ease-in-out infinite;
-}
-
-@keyframes product-select-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.4;
-  }
-}
-
-/* Product list item (kept for consumers rendering their own product list) */
+/* Custom ReactSelect Option & SingleValue */
 .product-select-item {
   position: relative;
   display: flex;
   align-items: center;
+  gap: 8px;
   padding: 8px 10px;
   font-size: 14px;
   color: var(--theme-text, #f5f7fa);
@@ -88,18 +36,34 @@
   transition: background-color 0.15s ease;
 }
 
+.product-select-single-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
 .product-select-item-content {
   display: flex;
   align-items: center;
   gap: 8px;
   flex: 1;
   min-width: 0;
-  flex-shrink: 1;
 }
 
-.product-select-item-content img {
+.product-select-item-thumb {
   flex-shrink: 0;
-  object-fit: contain;
+  border-radius: 3px;
+  object-fit: cover;
+}
+
+.product-select-item-thumb-placeholder {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 3px;
+  background-color: var(--theme-elevation-150, #3a3a3a);
 }
 
 .product-select-item-name {
@@ -110,8 +74,8 @@
 
 .product-select-item-price {
   flex-shrink: 0;
-  flex-grow: 0;
   font-weight: 500;
+  font-variant-numeric: tabular-nums;
   color: var(--theme-elevation-500, #9ba5b8);
   white-space: nowrap;
   margin-left: auto;
@@ -123,9 +87,7 @@
 
 .product-select-item-status {
   flex-shrink: 0;
-  flex-grow: 0;
-  margin-left: auto;
-  padding: 2px 6px;
+  padding: 1px 6px;
   font-size: 11px;
   line-height: 1.4;
   text-transform: uppercase;
@@ -135,25 +97,20 @@
   border-radius: 999px;
 }
 
-.product-select-item-status + .product-select-item-price {
-  margin-left: 8px;
-}
-
 .product-select-item:hover,
-.product-select-item:focus {
+.product-select-item[data-focused='true'] {
   background-color: var(--theme-elevation-100, #2a3441);
   color: var(--theme-text, #f5f7fa);
 }
 
 .product-select-item[data-selected='true'] {
-  background-color: var(--theme-elevation-100, #2a3441);
+  background-color: var(--theme-elevation-150, #2a3441);
   color: var(--theme-text, #f5f7fa);
 }
 
 .product-select-item[data-disabled='true'] {
   color: var(--theme-elevation-500, #9ba5b8);
-  opacity: 0.5;
-  pointer-events: none;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
@@ -163,7 +120,7 @@
   align-items: center;
   gap: 10px;
   margin-top: 8px;
-  max-width: 500px;
+  max-width: 560px;
   padding: 8px 10px;
   background-color: var(--theme-elevation-50, #1f1f1f);
   border: 1px solid var(--theme-elevation-150, #3a3a3a);
@@ -174,20 +131,28 @@
   flex-shrink: 0;
   width: 40px;
   height: 48px;
+  border-radius: 3px;
   object-fit: cover;
 }
 
 .product-select-summary-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   min-width: 0;
+}
+
+.product-select-summary-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .product-select-summary-name {
   overflow: hidden;
   color: var(--theme-text, #f5f7fa);
   font-size: 14px;
+  font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -196,4 +161,10 @@
   color: var(--theme-elevation-500, #9ba5b8);
   font-size: 13px;
   font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.product-select-link {
+  margin-top: 6px;
+  font-size: 13px;
 }
